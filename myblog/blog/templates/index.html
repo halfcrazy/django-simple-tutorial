@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-    {% for post in posts %}
+    {% for post in blogpost_list %}
         <h2>
             <a href="{% url 'blog:detail_post' post.title %}">{{ post.title }}</a>
         </h2>
