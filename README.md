@@ -1,42 +1,39 @@
 # 写给妹子的简明 Django 教程
 
-今天的内容是熟悉 Django，学会快速用 Django 创建一个项目，并且借助 Django admin 实现一个简易的博客。
-因为是讲过的内容，所以我就补充一下关键点，不重头开始了。
+在 写给女朋友的Django教程(1)-路由，模型，模板 中，曾经提到过 Django 有为我们提供了几种 view 来简化我们的开发。
 
-首先有下面这些命令需要清楚
+这节我们来说一下
 
-```bash
-django-admin startproject xxxx 创建项目
+首先是 ListView（文档见 https://docs.djangoproject.com/en/1.9/ref/class-based-views/generic-display/#django.views.generic.list.ListView）
 
-python manage.py startapp xxxx 创建应用
+ListView可以认为是一个可以根据某种规则取出一组对象的视图，参照官方示例来看
+```python
+class IndexView(generic.ListView):
+    template_name = 'polls/index.html'
+    context_object_name = 'latest_question_list'
 
-python manage.py migrate 数据库变更写入
-
-python manage.py createsuperuser 创建超级管理员
-
-python manage.py mkmigrations xxx 生成数据库预变更内容
-
-python manage.py sqlmigrate xxx xxx 生成数据库预变更内容sql语句
+    def get_queryset(self):
+        """Return the last five published questions."""
+        return Question.objects.order_by('-pub_date')[:5]
 ```
 
-然后是一些知识点
+根据 Django 的约定， ListView 默认使用的模板是 <app name>/<model name>_list.html，这里我们可以指定template_name来使用自己写的模板，默认传入到模板中的对象列表名叫 <model name>_list 同样，我们可以通过指定 context_object_name 来自定义。这个 View 默认的行为是返回所有的指定模型的对象， 我们可以通过覆写 get_queryset 方法来指定我们想返回那些，相当于可以做一个过滤。
 
-首先是路由的注册
-路由分为项目的路由和应用的路由，其中应用的路由应该在项目的路由中引入，使之生效
-路由匹配使用的是正则表达式，可以捕获参数，当作额外参数传递给对应的函数
-为了避免写死地址，在模板里可以使用反向路由(reverse url resolution)
 
-然后是 model 的定义
-因为 django 内置了 orm，所以使用起来非常方便。就是定义 field，然后创建查询什么的很简单就不说了
-这里需要提一下的是`python manage.py shell`可以进入交互模式，在这里可以用终端来操作 model(当然不限于此)
+其次是 DetailView（文档见 https://docs.djangoproject.com/en/1.9/ref/class-based-views/generic-display/#django.views.generic.detail.DetailView）
 
-其次是试图层(view)
-这里面写的是业务逻辑，也是跟其他组件(model，route)关联非常紧密的地方。第一天只讲了普通的定义函
-数的方法，但是 Django 本身还内置了一些类可以用，以后有机会提。或者也可以自己看下文档。
+DetailView可以认为是一个根据主键取出某一个对象的视图，官方示例如下
+```python
+class DetailView(generic.DetailView):
+    model = Question
+    template_name = 'polls/detail.html'
+```
+类似于上面说到的 ListView， DetailView 默认使用的模板是 <app name>/<model name>_detail.html， 我们同样可以自定义方法如上。传入模板的对象默认叫 object，我们可以自定义方法如上。
+DetailView 有一点不同的就是，因为这个 View 是取的一个对象，它是根据路由传进来的参数进行查找的，默认是通过主键查找对应的模型中的那个对象。
 
-最后是模板(templates)
-因为有了模板才有了现代我们看到的网页（这么说其实不准确，在现在前后端分离的背景下，很多时候后端都是
-直接通过 Ajax 输出 json 或 xml 给前台，在前端做页面的渲染展示）
-模板有对应的模板语言，Django 的模板语言还蛮简单，可以看看，什么`for if else`等等，还有一个叫过滤器的东
-西，可以自学看看。
-模板的设计实际有一点考前端的感觉，因为模板需要尽可能的写成可复用的组件，避免重复劳动。
+然后还要修改一下的就是我们的urls.py这个文件，
+```python
+url(r'^$', views.IndexView.as_view(), name='index'),
+url(r'^article/(?P<title>\w+)$', views.DetailView.as_view(), name='detail_post'),
+```
+我们之前urls这里写的是views里面的方法，现在使用来通用view之后，我们需要修改成 xxx.as_view()这样的形式
